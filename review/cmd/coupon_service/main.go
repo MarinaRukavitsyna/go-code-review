@@ -5,7 +5,7 @@ import (
 	"coupon_service/internal/config"
 	"coupon_service/internal/repository/memdb"
 	"coupon_service/internal/service"
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -15,11 +15,12 @@ var (
 )
 
 func main() {
-	svc := service.New(repo)
-	con := api.New(cfg.API, svc)
+	srv := service.New(repo)
+	con := api.New(cfg.API, srv)
 	con.Start()
-	fmt.Println("Starting Coupon service server")
+	defer con.Close()
+
+	log.Printf("Starting Coupon service")
 	<-time.After(1 * time.Hour * 24 * 365)
-	fmt.Println("Coupon service server alive for a year, closing")
-	con.Close()
+	log.Println("Coupon service server alive for a year, closing")
 }
