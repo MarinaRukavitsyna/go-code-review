@@ -23,7 +23,7 @@ func New() *Repository {
 func (r *Repository) FindByCode(code string) (*entity.Coupon, error) {
 	coupon, ok := r.entries[code]
 	if !ok {
-		return nil, fmt.Errorf("Coupon not found")
+		return nil, fmt.Errorf("coupon not found")
 	}
 	return &coupon, nil
 }
