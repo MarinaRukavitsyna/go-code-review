@@ -74,7 +74,8 @@ func TestService_CreateCoupon(t *testing.T) {
 		args   args
 		want   any
 	}{
-		{"Apply 10%", fields{memdb.New()}, args{10, "Superdiscount", 55}, nil},
+		{"Apply 10%", fields{memdb.New()}, args{10, "SuperDiscount", 55}, nil},
+		{"Apply 50%", fields{memdb.New()}, args{50, "MegaDiscount", 100}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
