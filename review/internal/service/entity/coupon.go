@@ -8,8 +8,8 @@ func init() {
 }
 
 type Coupon struct {
-	ID             string
-	Code           string
-	Discount       int
-	MinBasketValue int
+	ID             string `json:"id"`
+	Code           string `json:"code"`
+	Discount       int    `json:"discount"`
+	MinBasketValue int    `json:"minBasketValue"`
 }

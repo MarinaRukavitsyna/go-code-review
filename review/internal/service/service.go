@@ -8,18 +8,18 @@ import (
 	"github.com/google/uuid"
 )
 
-type Repository interface {
+type CouponDao interface {
 	FindByCode(string) (*entity.Coupon, error)
-	Save(entity.Coupon) error
+	Insert(entity.Coupon) error
 }
 
 type CouponService struct {
-	repo Repository
+	couponDao CouponDao
 }
 
-func New(repo Repository) CouponService {
+func New(repo CouponDao) CouponService {
 	return CouponService{
-		repo: repo,
+		couponDao: repo,
 	}
 }
 
@@ -28,7 +28,7 @@ func (s CouponService) UpdateBasket(basket entity.Basket, code string) (*entity.
 	b := &basket
 
 	// Retrieve the coupon from the repository
-	coupon, err := s.repo.FindByCode(code)
+	coupon, err := s.couponDao.FindByCode(code)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +56,8 @@ func (s CouponService) Insert(discount int, code string, minBasketValue int) (st
 		ID:             uuid.NewString(),
 	}
 
-	// Save the coupon to the repository
-	// TODO: fix Save and add tests
-	if err := s.repo.Save(coupon); err != nil {
+	// Save the coupon to the data repository
+	if err := s.couponDao.Insert(coupon); err != nil {
 		return "", err
 	}
 	return coupon.ID, nil
@@ -72,7 +71,7 @@ func (s CouponService) GetByCodes(codes []string) ([]entity.Coupon, error) {
 	)
 
 	for idx, code := range codes {
-		coupon, err := s.repo.FindByCode(code)
+		coupon, err := s.couponDao.FindByCode(code)
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("code: %s, index: %d", code, idx))
 			continue

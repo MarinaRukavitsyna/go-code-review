@@ -8,32 +8,33 @@ import (
 	"testing"
 )
 
-type mockRepository struct {
+type mockCouponRepository struct {
 	findByCodeFunc func(string) (*entity.Coupon, error)
+	insertFunc     func(entity.Coupon) error
 }
 
-func (m *mockRepository) FindByCode(code string) (*entity.Coupon, error) {
+func (m *mockCouponRepository) FindByCode(code string) (*entity.Coupon, error) {
 	return m.findByCodeFunc(code)
 }
 
-func (m *mockRepository) Save(coupon entity.Coupon) error {
-	return nil
+func (m *mockCouponRepository) Insert(coupon entity.Coupon) error {
+	return m.insertFunc(coupon)
 }
 
 func TestCouponNew(t *testing.T) {
 	type args struct {
-		repo Repository
+		couponDao CouponDao
 	}
 	tests := []struct {
 		name string
 		args args
 		want CouponService
 	}{
-		{"initialize service", args{repo: nil}, CouponService{repo: nil}},
+		{"initialize service", args{couponDao: nil}, CouponService{couponDao: nil}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.repo); !reflect.DeepEqual(got, tt.want) {
+			if got := New(tt.args.couponDao); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
@@ -42,7 +43,7 @@ func TestCouponNew(t *testing.T) {
 
 func TestCouponService_ApplyDiscount(t *testing.T) {
 	type fields struct {
-		repo Repository
+		couponDao CouponDao
 	}
 	type args struct {
 		basket entity.Basket
@@ -58,7 +59,7 @@ func TestCouponService_ApplyDiscount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := CouponService{
-				repo: tt.fields.repo,
+				couponDao: tt.fields.couponDao,
 			}
 			gotB, err := s.UpdateBasket(tt.args.basket, tt.args.code)
 			if (err != nil) != tt.wantErr {
@@ -74,7 +75,7 @@ func TestCouponService_ApplyDiscount(t *testing.T) {
 
 func TestCouponService_CreateCoupon(t *testing.T) {
 	type fields struct {
-		repo Repository
+		couponDao CouponDao
 	}
 	type args struct {
 		discount       int
@@ -89,11 +90,12 @@ func TestCouponService_CreateCoupon(t *testing.T) {
 	}{
 		{"Apply 10%", fields{memdb.New()}, args{10, "SuperDiscount", 55}, nil},
 		{"Apply 50%", fields{memdb.New()}, args{50, "MegaDiscount", 100}, nil},
+		{"Apply 90%", fields{memdb.New()}, args{90, "FinalSale", 100}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := CouponService{
-				repo: tt.fields.repo,
+				couponDao: tt.fields.couponDao,
 			}
 
 			_, err := s.Insert(tt.args.discount, tt.args.code, tt.args.minBasketValue)
@@ -106,7 +108,7 @@ func TestCouponService_CreateCoupon(t *testing.T) {
 
 func TestCouponService_UpdateBasket(t *testing.T) {
 	type fields struct {
-		repo Repository
+		couponDao CouponDao
 	}
 	type args struct {
 		basket entity.Basket
@@ -123,7 +125,7 @@ func TestCouponService_UpdateBasket(t *testing.T) {
 		{
 			name: "Valid coupon code",
 			fields: fields{
-				repo: &mockRepository{
+				couponDao: &mockCouponRepository{
 					findByCodeFunc: func(code string) (*entity.Coupon, error) {
 						return &entity.Coupon{
 							Discount: 10,
@@ -148,7 +150,7 @@ func TestCouponService_UpdateBasket(t *testing.T) {
 		{
 			name: "Invalid coupon code",
 			fields: fields{
-				repo: &mockRepository{
+				couponDao: &mockCouponRepository{
 					findByCodeFunc: func(code string) (*entity.Coupon, error) {
 						return nil, fmt.Errorf("coupon not found")
 					},
@@ -167,7 +169,7 @@ func TestCouponService_UpdateBasket(t *testing.T) {
 		{
 			name: "Negative value basket",
 			fields: fields{
-				repo: &mockRepository{
+				couponDao: &mockCouponRepository{
 					findByCodeFunc: func(code string) (*entity.Coupon, error) {
 						return &entity.Coupon{
 							Discount: 10,
@@ -190,7 +192,7 @@ func TestCouponService_UpdateBasket(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := CouponService{
-				repo: tt.fields.repo,
+				couponDao: tt.fields.couponDao,
 			}
 
 			gotB, err := s.UpdateBasket(tt.args.basket, tt.args.code)
@@ -210,7 +212,7 @@ func TestCouponService_UpdateBasket(t *testing.T) {
 
 func TestCouponService_GetByCodes(t *testing.T) {
 	type fields struct {
-		repo Repository
+		couponDao CouponDao
 	}
 	type args struct {
 		codes []string
@@ -225,7 +227,7 @@ func TestCouponService_GetByCodes(t *testing.T) {
 		{
 			name: "Valid codes",
 			fields: fields{
-				repo: &mockRepository{
+				couponDao: &mockCouponRepository{
 					findByCodeFunc: func(code string) (*entity.Coupon, error) {
 						return &entity.Coupon{
 							Discount: 10,
@@ -252,7 +254,7 @@ func TestCouponService_GetByCodes(t *testing.T) {
 		{
 			name: "Invalid codes",
 			fields: fields{
-				repo: &mockRepository{
+				couponDao: &mockCouponRepository{
 					findByCodeFunc: func(code string) (*entity.Coupon, error) {
 						return nil, fmt.Errorf("coupon not found")
 					},
@@ -268,7 +270,7 @@ func TestCouponService_GetByCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := CouponService{
-				repo: tt.fields.repo,
+				couponDao: tt.fields.couponDao,
 			}
 			got, err := s.GetByCodes(tt.args.codes)
 			if (err != nil) != tt.wantErr {
@@ -277,6 +279,70 @@ func TestCouponService_GetByCodes(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetByCodes() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCouponService_Insert(t *testing.T) {
+	type fields struct {
+		couponDao CouponDao
+	}
+	type args struct {
+		discount       int
+		code           string
+		minBasketValue int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Valid coupon insertion",
+			fields: fields{
+				couponDao: &mockCouponRepository{
+					insertFunc: func(coupon entity.Coupon) error {
+						return nil
+					},
+				},
+			},
+			args: args{
+				discount:       10,
+				code:           "TESTCODE",
+				minBasketValue: 50,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error during coupon insertion",
+			fields: fields{
+				couponDao: &mockCouponRepository{
+					insertFunc: func(coupon entity.Coupon) error {
+						return fmt.Errorf("failed to insert coupon")
+					},
+				},
+			},
+			args: args{
+				discount:       20,
+				code:           "ANOTHERCODE",
+				minBasketValue: 100,
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := CouponService{
+				couponDao: tt.fields.couponDao,
+			}
+			_, err := s.Insert(tt.args.discount, tt.args.code, tt.args.minBasketValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Insert() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
