@@ -4,7 +4,7 @@ import (
 	"coupon_service/internal/api"
 	"coupon_service/internal/config"
 	"coupon_service/internal/repository/memdb"
-	"coupon_service/internal/service"
+	couponService "coupon_service/internal/service"
 	"log"
 	"time"
 )
@@ -15,7 +15,7 @@ var (
 )
 
 func main() {
-	srv := service.New(repo)
+	srv := couponService.New(repo)
 	con := api.New(cfg.API, srv)
 	con.Start()
 	defer con.Close()

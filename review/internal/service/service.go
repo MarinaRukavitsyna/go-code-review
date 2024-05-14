@@ -1,74 +1,88 @@
-package service
+package couponService
 
 import (
-	. "coupon_service/internal/service/entity"
+	"coupon_service/internal/service/entity"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 )
 
 type Repository interface {
-	FindByCode(string) (*Coupon, error)
-	Save(Coupon) error
+	FindByCode(string) (*entity.Coupon, error)
+	Save(entity.Coupon) error
 }
 
-type Service struct {
+type CouponService struct {
 	repo Repository
 }
 
-func New(repo Repository) Service {
-	return Service{
+func New(repo Repository) CouponService {
+	return CouponService{
 		repo: repo,
 	}
 }
 
-func (s Service) ApplyCoupon(basket Basket, code string) (b *Basket, e error) {
-	b = &basket
+// Update the given basket with the provided coupon code
+func (s CouponService) UpdateBasket(basket entity.Basket, code string) (*entity.Basket, error) {
+	b := &basket
+
+	// Retrieve the coupon from the repository
 	coupon, err := s.repo.FindByCode(code)
 	if err != nil {
 		return nil, err
 	}
 
+	// Check if the basket value is positive
 	if b.Value > 0 {
+		// Apply discount and mark the application as successful
 		b.AppliedDiscount = coupon.Discount
 		b.ApplicationSuccessful = true
-	}
-	if b.Value == 0 {
-		return
+	} else if b.Value < 0 {
+		// Return an error if trying to apply discount to a negative value
+		return nil, fmt.Errorf("tried to apply discount to negative value")
 	}
 
-	return nil, fmt.Errorf("tried to apply discount to negative value")
+	// Return the modified basket
+	return b, nil
 }
 
-func (s Service) CreateCoupon(discount int, code string, minBasketValue int) any {
-	coupon := Coupon{
+// Insert a new coupon into the system with the given discount
+func (s CouponService) Insert(discount int, code string, minBasketValue int) (string, error) {
+	coupon := entity.Coupon{
 		Discount:       discount,
 		Code:           code,
 		MinBasketValue: minBasketValue,
 		ID:             uuid.NewString(),
 	}
 
+	// Save the coupon to the repository
+	// TODO: fix Save and add tests
 	if err := s.repo.Save(coupon); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return coupon.ID, nil
 }
 
-func (s Service) GetCoupons(codes []string) ([]Coupon, error) {
-	coupons := make([]Coupon, 0, len(codes))
-	var e error = nil
+// Retrieves a list of coupons based on the provided codes
+func (s CouponService) GetByCodes(codes []string) ([]entity.Coupon, error) {
+	var (
+		coupons []entity.Coupon
+		errs    []string
+	)
 
 	for idx, code := range codes {
 		coupon, err := s.repo.FindByCode(code)
 		if err != nil {
-			if e == nil {
-				e = fmt.Errorf("code: %s, index: %d", code, idx)
-			} else {
-				e = fmt.Errorf("%w; code: %s, index: %d", e, code, idx)
-			}
+			errs = append(errs, fmt.Sprintf("code: %s, index: %d", code, idx))
+			continue
 		}
 		coupons = append(coupons, *coupon)
 	}
 
-	return coupons, e
+	if len(errs) > 0 {
+		return coupons, fmt.Errorf("errors occurred while fetching coupons: %s", strings.Join(errs, "; "))
+	}
+
+	return coupons, nil
 }

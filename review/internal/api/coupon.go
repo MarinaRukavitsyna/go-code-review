@@ -12,7 +12,7 @@ func (a *API) Apply(c *gin.Context) {
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return
 	}
-	basket, err := a.svc.ApplyCoupon(apiReq.Basket, apiReq.Code)
+	basket, err := a.svc.UpdateBasket(apiReq.Basket, apiReq.Code)
 	if err != nil {
 		return
 	}
@@ -25,7 +25,7 @@ func (a *API) Create(c *gin.Context) {
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return
 	}
-	err := a.svc.CreateCoupon(apiReq.Discount, apiReq.Code, apiReq.MinBasketValue)
+	_, err := a.svc.Insert(apiReq.Discount, apiReq.Code, apiReq.MinBasketValue)
 	if err != nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (a *API) Get(c *gin.Context) {
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return
 	}
-	coupons, err := a.svc.GetCoupons(apiReq.Codes)
+	coupons, err := a.svc.GetByCodes(apiReq.Codes)
 	if err != nil {
 		return
 	}

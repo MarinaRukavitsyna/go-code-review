@@ -11,10 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Service interface {
-	ApplyCoupon(entity.Basket, string) (*entity.Basket, error)
-	CreateCoupon(int, string, int) any
-	GetCoupons([]string) ([]entity.Coupon, error)
+type CouponService interface {
+	UpdateBasket(entity.Basket, string) (*entity.Basket, error)
+	Insert(int, string, int) (string, error)
+	GetByCodes([]string) ([]entity.Coupon, error)
 }
 
 type Config struct {
@@ -25,11 +25,11 @@ type Config struct {
 type API struct {
 	srv *http.Server
 	MUX *gin.Engine
-	svc Service
+	svc CouponService
 	CFG Config
 }
 
-func New[T Service](cfg Config, svc T) API {
+func New[T CouponService](cfg Config, svc T) API {
 	gin.SetMode(gin.ReleaseMode)
 	r := new(gin.Engine)
 	r = gin.New()
