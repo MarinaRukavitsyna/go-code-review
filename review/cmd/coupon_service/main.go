@@ -9,18 +9,25 @@ import (
 	"time"
 )
 
-var (
-	cfg  = config.New()
-	repo = memdb.New()
-)
-
 func main() {
-	srv := couponService.New(repo)
-	con := api.New(cfg.APIConfig, srv)
-	con.Start()
-	defer con.Close()
+	// Load the application configuration
+	cfg := config.New()
 
-	log.Printf("Starting Coupon service")
+	// Initialize data
+	data := memdb.New()
+
+	// Initialize the coupon service
+	couponSvc := couponService.New(data)
+
+	// Initialize the API server
+	apiServer := api.New(cfg.APIConfig, couponSvc)
+
+	// Start the API server
+	apiServer.Start()
+
+	defer apiServer.Close()
+
+	log.Printf("Coupon service started at %s", time.Now().Format("2006-01-02 15:04:05"))
 	<-time.After(1 * time.Hour * 24 * 365)
-	log.Println("Coupon service server alive for a year, closing")
+	log.Println("Coupon service has been running for a year. Shutting down gracefully...")
 }
