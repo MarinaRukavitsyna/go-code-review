@@ -11,67 +11,69 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Defines the interface for the coupon-related services
 type CouponService interface {
 	UpdateBasket(entity.Basket, string) (*entity.Basket, error)
 	Insert(int, string, int) (string, error)
 	GetByCodes([]string) ([]entity.Coupon, error)
 }
 
+// Hold the configuration settings for the API server
 type Config struct {
 	Host string
 	Port int
 }
 
-type API struct {
-	srv *http.Server
-	MUX *gin.Engine
-	svc CouponService
-	CFG Config
+// Encapsulate the HTTP server, Gin engine, service, and configuration
+type APIRouter struct {
+	srv  *http.Server
+	mux  *gin.Engine
+	csrv CouponService
+	cfg  Config
 }
 
-func New[T CouponService](cfg Config, svc T) API {
+// Initialize a new APIRouter instance with the given configuration and service
+func New(cfg Config, svc CouponService) APIRouter {
 	gin.SetMode(gin.ReleaseMode)
-	r := new(gin.Engine)
-	r = gin.New()
+	r := gin.New()
 	r.Use(gin.Recovery())
 
-	return API{
-		MUX: r,
-		CFG: cfg,
-		svc: svc,
-	}.withServer()
+	apiRouter := APIRouter{
+		mux:  r,
+		cfg:  cfg,
+		csrv: svc,
+	}
+
+	return apiRouter.withServer().withRoutes()
 }
 
-func (a API) withServer() API {
-
-	ch := make(chan API)
-	go func() {
-		a.srv = &http.Server{
-			Addr:    fmt.Sprintf(":%d", a.CFG.Port),
-			Handler: a.MUX,
-		}
-		ch <- a
-	}()
-
-	return <-ch
+// Configure the HTTP server for the APIRouter instance
+func (a APIRouter) withServer() APIRouter {
+	a.srv = &http.Server{
+		Addr:    fmt.Sprintf(":%d", a.cfg.Port),
+		Handler: a.mux,
+	}
+	return a
 }
 
-func (a API) withRoutes() API {
-	apiGroup := a.MUX.Group("/api")
+// Set up the API routes and returns the APIRouter instance
+func (a APIRouter) withRoutes() APIRouter {
+	apiGroup := a.mux.Group("/api")
 	apiGroup.POST("/apply", a.ApplyCoupon)
 	apiGroup.POST("/create", a.CreateCoupon)
 	apiGroup.GET("/coupons", a.GetCouponsByCodes)
 	return a
 }
 
-func (a API) Start() {
-	if err := a.srv.ListenAndServe(); err != nil {
+// Start the HTTP server
+func (a APIRouter) Start() {
+	if err := a.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
 
-func (a API) Close() {
-	<-time.After(5 * time.Second)
+// Close gracefully shuts down the HTTP server.
+func (a APIRouter) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

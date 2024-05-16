@@ -16,7 +16,7 @@ var (
 
 func main() {
 	srv := couponService.New(repo)
-	con := api.New(cfg.API, srv)
+	con := api.New(cfg.APIConfig, srv)
 	con.Start()
 	defer con.Close()
 

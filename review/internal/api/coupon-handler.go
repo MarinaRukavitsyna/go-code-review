@@ -34,14 +34,14 @@ func parsePayload(c *gin.Context, payload any) error {
 }
 
 // ApplyCoupon handles the application of a coupon to a basket
-func (a *API) ApplyCoupon(c *gin.Context) {
+func (a *APIRouter) ApplyCoupon(c *gin.Context) {
 	var apiReq RequestPayload
 	if err := parsePayload(c, &apiReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	basket, err := a.svc.UpdateBasket(apiReq.Basket, apiReq.Code)
+	basket, err := a.csrv.UpdateBasket(apiReq.Basket, apiReq.Code)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,14 +51,14 @@ func (a *API) ApplyCoupon(c *gin.Context) {
 }
 
 // CreateCoupon handles the creation of a new coupon
-func (a *API) CreateCoupon(c *gin.Context) {
+func (a *APIRouter) CreateCoupon(c *gin.Context) {
 	var apiReq CouponPayload
 	if err := parsePayload(c, &apiReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if _, err := a.svc.Insert(apiReq.Discount, apiReq.Code, apiReq.MinBasketValue); err != nil {
+	if _, err := a.csrv.Insert(apiReq.Discount, apiReq.Code, apiReq.MinBasketValue); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -67,14 +67,14 @@ func (a *API) CreateCoupon(c *gin.Context) {
 }
 
 // GetCouponsByCodes handles fetching coupons by their codes
-func (a *API) GetCouponsByCodes(c *gin.Context) {
+func (a *APIRouter) GetCouponsByCodes(c *gin.Context) {
 	var apiReq CouponCodePayload
 	if err := parsePayload(c, &apiReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	coupons, err := a.svc.GetByCodes(apiReq.Codes)
+	coupons, err := a.csrv.GetByCodes(apiReq.Codes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

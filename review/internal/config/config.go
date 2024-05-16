@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	API api.Config
+	APIConfig api.Config
 }
 
 func New() Config {
