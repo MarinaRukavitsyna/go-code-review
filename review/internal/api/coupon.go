@@ -1,15 +1,30 @@
 package api
 
 import (
-	"coupon_service/internal/api/entity"
+	"coupon_service/internal/service/entity"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
+type RequestPayload struct {
+	Code   string        `json:"code"`
+	Basket entity.Basket `json:"basket"`
+}
+
+type CouponCodePayload struct {
+	Codes []string `json:"codes"`
+}
+
+type CouponPayload struct {
+	Discount       int    `json:"discount"`
+	Code           string `json:"code"`
+	MinBasketValue int    `json:"minBasketValue"`
+}
+
 // ApplyCoupon handles the application of a coupon to a basket
 func (a *API) ApplyCoupon(c *gin.Context) {
-	apiReq, err := parseApplicationRequest(c)
+	apiReq, err := parseAppRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -42,7 +57,7 @@ func (a *API) CreateCoupon(c *gin.Context) {
 
 // GetCouponsByCodes handles fetching coupons by their codes
 func (a *API) GetCouponsByCodes(c *gin.Context) {
-	apiReq, err := parseCouponRequestByCodes(c)
+	apiReq, err := parseCouponCodesRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -58,8 +73,8 @@ func (a *API) GetCouponsByCodes(c *gin.Context) {
 }
 
 // Helper function to parse ApplicationRequest from the context
-func parseApplicationRequest(c *gin.Context) (entity.ApplicationRequest, error) {
-	var apiReq entity.ApplicationRequest
+func parseAppRequest(c *gin.Context) (RequestPayload, error) {
+	var apiReq RequestPayload
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return apiReq, err
 	}
@@ -67,8 +82,8 @@ func parseApplicationRequest(c *gin.Context) (entity.ApplicationRequest, error) 
 }
 
 // Helper function to parse CouponRequest from the context
-func parseCouponRequest(c *gin.Context) (entity.Coupon, error) {
-	var apiReq entity.Coupon
+func parseCouponRequest(c *gin.Context) (CouponPayload, error) {
+	var apiReq CouponPayload
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return apiReq, err
 	}
@@ -76,8 +91,8 @@ func parseCouponRequest(c *gin.Context) (entity.Coupon, error) {
 }
 
 // Helper function to parse CouponRequest by codes from the context
-func parseCouponRequestByCodes(c *gin.Context) (entity.CouponRequest, error) {
-	var apiReq entity.CouponRequest
+func parseCouponCodesRequest(c *gin.Context) (CouponCodePayload, error) {
+	var apiReq CouponCodePayload
 	if err := c.ShouldBindJSON(&apiReq); err != nil {
 		return apiReq, err
 	}
