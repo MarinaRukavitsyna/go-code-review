@@ -23,7 +23,10 @@ func main() {
 	apiServer := api.New(cfg.APIConfig, couponSvc)
 
 	// Start the API server
-	apiServer.Start()
+	err := apiServer.Start()
+	if err != nil {
+		log.Fatalf("Failed to start API server: %v", err)
+	}
 
 	defer apiServer.Close()
 

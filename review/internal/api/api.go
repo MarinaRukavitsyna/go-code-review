@@ -66,10 +66,11 @@ func (a APIRouter) withRoutes() APIRouter {
 }
 
 // Start the HTTP server
-func (a APIRouter) Start() {
+func (a APIRouter) Start() error {
 	if err := a.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
 // Close gracefully shuts down the HTTP server.
